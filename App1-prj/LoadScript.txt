@@ -1,0 +1,32 @@
+﻿///$tab Main
+SET ThousandSep=',';
+SET DecimalSep='.';
+SET MoneyThousandSep=',';
+SET MoneyDecimalSep='.';
+SET MoneyFormat='₹ #,##0.00;₹ -#,##0.00';
+SET TimeFormat='hh:mm:ss';
+SET DateFormat='DD-MM-YYYY';
+SET TimestampFormat='DD-MM-YYYY hh:mm:ss[.fff]';
+SET FirstWeekDay=0;
+SET BrokenWeeks=1;
+SET ReferenceDay=0;
+SET FirstMonthOfYear=1;
+SET CollationLocale='en-IN';
+SET MonthNames='Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec';
+SET LongMonthNames='January;February;March;April;May;June;July;August;September;October;November;December';
+SET DayNames='Mon;Tue;Wed;Thu;Fri;Sat;Sun';
+SET LongDayNames='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
+///$tab Test
+Sales:
+LOAD * Inline [
+ID,Aid, Sales
+1,11,100
+2,11,200
+3,22,300 ];
+
+
+Agent:
+LOAD * Inline [
+Aid,Name
+11,aa
+22,bb ];
