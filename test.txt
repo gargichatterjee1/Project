@@ -1,0 +1,73 @@
+User:
+Load * Inline [
+ACCESS,USERID,COUNTRY
+ADMIN,KUSH,ALL
+USER,USER1,UK
+USER,USER2,US
+USER,USER3,INDIA ];
+
+Join(User)
+Load Distinct COUNTRY as _Country
+Resident User;
+
+UserAccess:
+Load ACCESS,
+     USERID, 
+     [_Country] & if(COUNTRY=[_Country],1,0) as ACCESS_KEY
+Resident User
+Where COUNTRY<>'ALL' and _Country<>'ALL';
+
+Concatenate(UserAccess)
+Load ACCESS,
+     USERID, 
+     COUNTRY as ACCESS_KEY
+Resident User
+Where COUNTRY='ALL' and _Country='ALL';
+
+Drop Table User;
+
+
+
+Data:
+Load *,
+     Country as _Country;
+Load * Inline [
+ID, Country, Sales
+1,UK,1000
+2,US,2000
+3,India,3000 ];
+
+Drop Field Country;
+
+CountryLink1:
+Load FieldValue('_Country',RecNo()) as _Country,
+     upper(FieldValue('_Country',RecNo())) as [Country Name]
+AutoGenerate FieldValueCount('_Country');
+
+Concatenate(CountryLink1)
+Load 'ALL' as [Country Name],
+     _Country
+Resident CountryLink1;
+
+CountryLink:
+Load _Country,
+     _Country as [Country Name],
+     [Country Name] & 1 as ACCESS_KEY
+Resident CountryLink1
+where [Country Name]<>'ALL';
+
+Concatenate(CountryLink)
+Load _Country,
+     'Masked' as [Country Name],
+     [Country Name] & 0 as ACCESS_KEY
+Resident CountryLink1
+where [Country Name]<>'ALL';
+
+Concatenate(CountryLink)
+Load _Country,
+     _Country as [Country Name],
+     [Country Name] as ACCESS_KEY
+Resident CountryLink1
+where [Country Name]='ALL';
+             
+Drop Table CountryLink1;
