@@ -1,0 +1,150 @@
+GLIF:
+LOAD
+    bancs_account_number as [BaNCS Acct Number],
+    branch as Branch,
+    scheme as Scheme,
+    account_type as [Account Type],
+    if(match(division,'GB','NI'),division) as Division,
+    master_case_number_finance as [Master Case Number],
+    contact_scin as [Contact SCIN],
+    contact_sensitive_indicator,
+    contact_personal_interest_indicator,
+    contact_name as [Contact Name],
+    contact_role as [Contact Role],
+    employer_name as [Employer Name],
+    employer_reference_number as [Employer Ref. Number],
+    aggregate_value_of_nrp_child_maintenance_liability_charged,
+    aggregate_value_of_nrp_residual_arrears_transitioned,
+    aggregate_value_of_non_child_maintenance_charged,
+    aggregate_value_of_nrp_direct_pay_maintenance_charged,
+    aggregate_value_of_nrp_enforcement_charges,
+    aggregate_value_of_nrp_collection_charges,
+    aggregate_value_of_pwc_direct_pay_maintenance_charged,
+    aggregate_value_of_pwc_child_maintenance_liability_charged,
+    aggregate_value_of_pwc_residual_arrears_transitioned,
+    aggregate_value_of_ongoing_child_maintenance_cash_received,
+    aggregate_value_of_residual_arrears_cash_received,
+    aggregate_value_of_nrp_enforcement_charge_cash_received,
+    aggregate_value_of_nrp_collection_cash_received,
+    aggregate_value_of_residual_arrears_cash_paid,
+    aggregate_value_of_child_maintenance_cash_paid,
+    aggregate_value_of_cash_refunds_paid_to_nrp,
+    aggregate_value_of_pwc_payment_charges_paid,
+    aggregate_value_of_non_cash_receipt,
+    aggregate_value_of_residual_arrears_non_cash_receipt,
+    aggregate_value_of_non_cash_payment,
+    aggregate_value_of_residual_arrears_non_cash_payment,
+    aggregate_value_of_nrp_direct_pay_receipt,
+    aggregate_value_of_pwc_direct_pay_payment,
+    aggregate_value_of_write_offs_nrp,
+    aggregate_value_of_nrp_coll_charges_written_off,
+    aggregate_value_of_nrp_enforcement_write_off,
+    aggregate_value_of_cmg_cost_written_off,
+    aggregate_value_of_sos_liabilities_written_off,
+    aggregate_value_of_residual_arrears_written_off_nrp,
+    aggregate_value_of_write_off_pwc,
+    aggregate_value_of_legacy_write_off_pwc,
+    date(Date#(business_date,'YYYY-MM-DD')) as [Business Date]
+FROM [lib://Balance_movement_qvd/gl_account_daily_aggregated_fact.qvd]
+(qvd) 
+//where Exists(account_type);
+where match(account_type,'NRP','PWC');
+​
+​Measure:
+Load * Inline [
+Measure,MeasureNo
+NRP Balance(£),1
+NRP Collect & Pay(£),2
+NRP Residual Arrears(£),3
+NRP Direct Pay(£),4
+Enforcement Charges(£),5
+Collection Charges(£),6
+Non CM(£),7
+PWC Balance(£),8
+PWC Collect & Pay(£),9
+PWC Residual Arrears(£),10
+PWC Direct Pay(£),11
+NRP Child Maintenance Liability Charged(£),12
+Ongoing Child Maintenance Cash Received(£),13
+Cash Refunds Paid to NRP(£),14
+Non Cash Receipt(£),15
+Writeoff NRP(£),16
+NRP Residual Arrears Transitioned(£),17
+Residual Arrears Cash Received(£),18
+Residual Arrears Non Cash Receipt(£),19
+Residual Arrears Writtenoff NRP(£),20
+NRP Direct Pay Maintenance Charged(£),21
+NRP Direct Pay Reciept(£),22
+NRP Enforcement Charges(£),23
+NRP Enforcement Charge Cash Received(£),24
+NRP Enforcement Writeoff(£),25
+NRP Collection Charges(£),26
+NRP Collection Cash Received(£),27
+NRP Collection Charges Writtenoff(£),28
+Non Child Maintenance Liability Charged(£),29
+CMG Cost Writtenoff(£),30
+PWC Child Maintenance Liability Charged(£),31
+Child Maintenance Cash Paid(£),32
+Non Cash Payment(£),33
+Writeoff PWC(£),34
+PWC Residual Arrears Transitioned(£),35
+Residual Arrears Cash Paid(£),36
+Residual Arrears Non Cash Payment(£),37
+Legacy Writeoff PWC(£),38
+PWC Direct Pay Maintenance Charged(£),39
+PWC Direct Pay Payment(£),40 ];
+
+
+
+Dimension:
+Load * Inline [
+Dimension,DimNo
+BaNCS Acct Number,1
+Account Type,2
+Branch,3
+Scheme,4
+Division,5
+Master Case Number,6
+Contact SCIN,7
+Contact Name,8
+Contact Role,9
+Employer Name,10
+Employer Ref. Number,11
+Year,12
+Month,13
+Week,14
+Business Date,15];
+
+Temp:
+load min(created_date) as MinDate,  
+     max(created_date) as MaxDate;   
+Load FieldValue('Business Date',RecNo()) as created_date
+AutoGenerate FieldValueCount('Business Date');
+
+let vMinDate = Peek('MinDate',0,'Temp');
+let vMaxDate = Peek('MaxDate',0,'Temp');
+
+drop Table Temp;
+
+Calendar:
+LOAD
+    "Calendar Date" as [Business Date],
+    "Calendar Week Start Date" as Week,
+    "Calender Month" as Month,
+    "Calender Month Name" as MonthYear,
+    YearStart("Calendar Date") as YearStartDate,
+//    YearEnd("Calendar Date") as YearEndDate,
+    MonthStart("Calendar Date") as MonthStartDate,
+//    MonthEnd("Calendar Date") as MonthEndDate,
+    WeekStart("Calendar Date") as WeekStartDate,
+//    WeekEnd("Calendar Date") as WeekEndDate,
+    QuarterStart("Calendar Date") as QuarterStartDate,
+//    QuarterEnd("Calendar Date") as QuarterEndDate,
+    "Calender Quarter Name" as Quarter,
+    "Calendar Year" as Year,
+    "Calendar Year"&"Calender Quarter Number" as QuarterNum,
+    "Calendar Year"&"Calender Week Number" as WeekNum,
+    "Working Day Indicator"
+FROM [lib://QVDPath_SRT/Calendar.qvd]
+(qvd)
+where floor("Calendar Date")>=$(vMinDate) and floor("Calendar Date")<=$(vMaxDate);
