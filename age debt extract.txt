@@ -1,0 +1,136 @@
+LIB CONNECT TO 'Hive_connection';
+
+[financial_account_monthly_liability_fact]:
+LOAD
+    liability_due_financial_month as [Financial Month],
+    liability_due_financial_year as [Financial Year],
+    date(Date#(pick(match(liability_due_financial_month,1,2,3,4,5,6,7,8,9,10,11,12),
+    'Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan', 'Feb','Mar') & ' ' &
+    If (liability_due_financial_month >9 , SubField(liability_due_financial_year,'-',2)
+    , SubField(liability_due_financial_year,'-',1)),'MMM YYYY')) As [Business Date],
+    bancs_account_number as [BaNCS Account Number],
+    liability_line_item_due_type_code,
+    liability_due_type_description as [Due Type Description],
+    liability_line_item_service_type as [Service Type],
+    liability_due_type_summary_grouping,
+    pick(match(liability_due_type_summary_grouping,1,2,3,4,5),
+    'Child Maintenance Liability(£)',
+    'Non Child Maintenance Liability(£)',
+    'Direct Pay Liability(£)',
+    'Charge Liability(£)',
+    'Residual Arrears(£)') as [Due Type Summary Group],
+    if(match(division,'GB','NI'),division) as Division,
+    master_case_number_finance as [Master Case Number],
+    contact_scin as [Contact SCIN],
+    contact_sensitive_indicator,
+    contact_personal_interest_indicator,
+    num(value_of_liability_due_bancs_account_level_financial_month) as value_of_liability_due_bancs_account_level_financial_month,
+    num(value_of_liability_paid_bancs_account_level_financial_month) as value_of_liability_paid_bancs_account_level_financial_month,
+    num(value_of_liability_adjusted_bancs_account_level_financial_month) as value_of_liability_adjusted_bancs_account_level_financial_month,
+    num(value_of_liability_written_off_bancs_account_level_financial_month) as value_of_liability_written_off_bancs_account_level_financial_month,
+    num(value_of_liability_outstanding_bancs_account_level_financial_month) as value_of_liability_outstanding_bancs_account_level_financial_month,
+    process_date;
+    
+SELECT *
+FROM [cap_mi_test].[financial_account_monthly_liability_fact];
+
+
+Store financial_account_monthly_liability_fact into lib://Age_debt_qvd/financial_account_monthly_liability_fact.qvd;
+
+Drop Table financial_account_monthly_liability_fact;
+
+
+[yearly_liability_fact]:
+LOAD
+    liability_due_financial_year as [Financial Year],
+    SubField(liability_due_financial_year,'-',2) as Year,
+    liability_line_item_due_type_code,
+    liability_due_type_description as [Due Type Description],
+    liability_line_item_service_type as [Service Type],
+    liability_due_type_summary_grouping,
+    pick(match(liability_due_type_summary_grouping,1,2,3,4,5),
+    'Child Maintenance Liability(£)',
+    'Non Child Maintenance Liability(£)',
+    'Direct Pay Liability(£)',
+    'Charge Liability(£)',
+    'Residual Arrears(£)') as [Due Type Summary Group],
+    if(match(division,'GB','NI'),division) as Division,
+    num(value_of_liability_due_financial_year) as value_of_liability_due_financial_year,
+    num(value_of_liability_paid_financial_year) as value_of_liability_paid_financial_year,
+    num(value_of_liability_adjusted_financial_year) as value_of_liability_adjusted_financial_year,
+    num(value_of_liability_written_off_financial_year) as value_of_liability_written_off_financial_year,
+    num(value_of_liability_outstanding_financial_year) as value_of_liability_outstanding_financial_year,
+    process_date ;
+    
+SELECT *
+FROM [cap_mi_test].[yearly_liability_fact];
+
+Store yearly_liability_fact into lib://Age_debt_qvd/yearly_liability_fact.qvd;
+
+Drop Table yearly_liability_fact;
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+Age_debt_monthly:
+LOAD
+    [Business Date],
+    "BaNCS Account Number",
+    liability_line_item_due_type_code,
+    "Due Type Description",
+    "Service Type",
+    liability_due_type_summary_grouping,
+    "Due Type Summary Group",
+    Division,
+    "Master Case Number",
+    "Contact SCIN",
+    value_of_liability_outstanding_bancs_account_level_financial_month,
+    process_date
+FROM [lib://Age_debt_qvd/financial_account_monthly_liability_fact.qvd]
+(qvd);
+
+
+Sort_Summary_Group:
+Load * Inline [
+Due Type Summary Group, GroupNumber
+Child Maintenance Liability(£),1
+Direct Pay Liability(£),2
+Charge Liability(£),3
+Non Child Maintenance Liability(£),4
+Residual Arrears(£),5];
+---------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+Age_debt_yearly:
+LOAD
+    "Financial Year",
+    "Year",
+    liability_line_item_due_type_code,
+    "Due Type Description",
+    liability_due_type_summary_grouping,
+    "Due Type Summary Group",
+    Division, 
+    value_of_liability_outstanding_financial_year
+FROM [lib://Age_debt_qvd/yearly_liability_fact.qvd]
+(qvd);
+
+Sort_Summary_Group:
+Load * Inline [
+Due Type Summary Group, GroupNumber
+Child Maintenance Liability(£),1
+Direct Pay Liability(£),2
+Charge Liability(£),3
+Non Child Maintenance Liability(£),4
+Residual Arrears(£),5
+];
+   
+   
